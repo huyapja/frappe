@@ -4,7 +4,7 @@
 
 from functools import wraps
 from json import dumps, loads
-
+import re
 import frappe
 from frappe import DoesNotExistError, ValidationError, _, _dict
 from frappe.boot import get_allowed_pages, get_allowed_reports
@@ -14,6 +14,7 @@ from frappe.cache_manager import (
 	build_table_count_cache,
 )
 from frappe.core.doctype.custom_role.custom_role import get_custom_allowed_roles
+from mtp.utils.deck_permissions import get_route_access_rules as _get_route_access_rules
 
 
 def handle_not_exist(fn):
@@ -55,16 +56,19 @@ class Workspace:
 
 			if self.doc.content:
 				self.onboarding_list = [
-					x["data"]["onboarding_name"] for x in loads(self.doc.content) if x["type"] == "onboarding"
+					x["data"]["onboarding_name"] for x in loads(self.doc.content) if
+					x["type"] == "onboarding"
 				]
 			self.onboardings = []
 
 			self.table_counts = get_table_with_counts()
 		self.restricted_doctypes = (
-			frappe.cache.get_value("domain_restricted_doctypes") or build_domain_restriced_doctype_cache()
+			frappe.cache.get_value(
+				"domain_restricted_doctypes") or build_domain_restriced_doctype_cache()
 		)
 		self.restricted_pages = (
-			frappe.cache.get_value("domain_restricted_pages") or build_domain_restriced_page_cache()
+			frappe.cache.get_value(
+				"domain_restricted_pages") or build_domain_restriced_page_cache()
 		)
 
 	def is_permitted(self):
@@ -182,7 +186,8 @@ class Workspace:
 		if item.dependencies:
 			dependencies = [dep.strip() for dep in item.dependencies.split(",")]
 
-			incomplete_dependencies = [d for d in dependencies if not self._doctype_contains_a_record(d)]
+			incomplete_dependencies = [d for d in dependencies if
+									   not self._doctype_contains_a_record(d)]
 
 			if len(incomplete_dependencies):
 				item.incomplete_dependencies = incomplete_dependencies
@@ -209,7 +214,8 @@ class Workspace:
 		from frappe.utils import has_common
 
 		allowed = [
-			d.role for d in frappe.get_all("Has Role", fields=["role"], filters={"parent": custom_block_name})
+			d.role for d in
+			frappe.get_all("Has Role", fields=["role"], filters={"parent": custom_block_name})
 		]
 
 		if not allowed:
@@ -291,7 +297,8 @@ class Workspace:
 			if self.is_item_allowed(item.link_to, item.type) and _in_active_domains(item):
 				if item.type == "Report":
 					report = self.allowed_reports.get(item.link_to, {})
-					if report.get("report_type") in ["Query Report", "Script Report", "Custom Report"]:
+					if report.get("report_type") in ["Query Report", "Script Report",
+													 "Custom Report"]:
 						new_item["is_query_report"] = 1
 					else:
 						new_item["ref_doctype"] = report.get("ref_doctype")
@@ -359,7 +366,8 @@ class Workspace:
 				if frappe.has_permission("Number Card", doc=number_card.number_card_name):
 					# Translate label
 					number_card.label = (
-						_(number_card.label) if number_card.label else _(number_card.number_card_name)
+						_(number_card.label) if number_card.label else _(
+							number_card.number_card_name)
 					)
 					all_number_cards.append(number_card)
 
@@ -378,7 +386,8 @@ class Workspace:
 
 					# Translate label
 					custom_block.label = (
-						_(custom_block.label) if custom_block.label else _(custom_block.custom_block_name)
+						_(custom_block.label) if custom_block.label else _(
+							custom_block.custom_block_name)
 					)
 					all_custom_blocks.append(custom_block)
 
@@ -418,6 +427,24 @@ def get_desktop_page(page):
 def get_workspace_sidebar_items():
 	"""Get list of sidebar items for desk"""
 	has_access = "Workspace Manager" in frappe.get_roles()
+	user_roles = set(frappe.get_roles())
+
+	# Roles bypass blacklist checks
+	access_rules = _get_route_access_rules()
+	_BYPASS_ROLES = access_rules.get("bypass_roles", set())
+	ROLE_BLACKLIST = access_rules.get("role_blacklist", {})
+
+	print("_BYPASS_ROLES: {}", _BYPASS_ROLES)
+	print("ROLE_BLACKLIST: {}", ROLE_BLACKLIST)
+
+	# Build list of blocked patterns for this user's roles
+	_blocked_patterns = []
+	if not _BYPASS_ROLES.intersection(user_roles):
+		for role, patterns in ROLE_BLACKLIST.items():
+			if role in user_roles:
+				_blocked_patterns.extend(patterns)
+
+	print("_blocked_patterns: {}", _blocked_patterns)
 
 	# don't get domain restricted pages
 	blocked_modules = frappe.get_cached_doc("User", frappe.session.user).get_blocked_modules()
@@ -454,12 +481,28 @@ def get_workspace_sidebar_items():
 	pages = []
 	private_pages = []
 
-	# Filter Page based on Permission
+	# Filter Page based on Permission + MTP blacklist
 	for page in all_pages:
+		# Build full path for matching: /app/<workspace-slug>
+		workspace_slug = page.name.lower().replace(" ", "-")
+		full_path = f"/app/{workspace_slug}"
+
+		# Check blacklist: match pattern against full path
+		blocked = False
+		for pattern in _blocked_patterns:
+			if re.match(pattern, full_path):
+				blocked = True
+				break
+
+		print(f"[MTP] checking workspace: name={page.name!r}, path={full_path!r}, blocked={blocked}")
+		if blocked:
+			continue
+
 		try:
 			workspace = Workspace(page, True)
 			if has_access or workspace.is_permitted():
-				if page.public and (has_access or not page.is_hidden) and page.title != "Welcome Workspace":
+				if page.public and (
+					has_access or not page.is_hidden) and page.title != "Welcome Workspace":
 					pages.append(page)
 				elif page.for_user == frappe.session.user:
 					private_pages.append(page)
@@ -549,13 +592,15 @@ def save_new_widget(doc, page, blocks, new_widgets):
 		if widgets.shortcut:
 			doc.shortcuts.extend(new_widget(widgets.shortcut, "Workspace Shortcut", "shortcuts"))
 		if widgets.quick_list:
-			doc.quick_lists.extend(new_widget(widgets.quick_list, "Workspace Quick List", "quick_lists"))
+			doc.quick_lists.extend(
+				new_widget(widgets.quick_list, "Workspace Quick List", "quick_lists"))
 		if widgets.custom_block:
 			doc.custom_blocks.extend(
 				new_widget(widgets.custom_block, "Workspace Custom Block", "custom_blocks")
 			)
 		if widgets.number_card:
-			doc.number_cards.extend(new_widget(widgets.number_card, "Workspace Number Card", "number_cards"))
+			doc.number_cards.extend(
+				new_widget(widgets.number_card, "Workspace Number Card", "number_cards"))
 		if widgets.card:
 			doc.build_links_table_from_card(widgets.card)
 
@@ -600,7 +645,7 @@ def clean_up(original_page, blocks):
 	# card cleanup
 	for i, v in enumerate(original_page.links):
 		if v.type == "Card Break" and v.label not in page_widgets["card"]:
-			del original_page.links[i : i + v.link_count + 1]
+			del original_page.links[i: i + v.link_count + 1]
 
 
 def new_widget(config, doctype, parentfield):
