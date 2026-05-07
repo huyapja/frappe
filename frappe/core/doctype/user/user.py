@@ -526,7 +526,8 @@ class User(Document):
 		print(">>> _link :", _link)
 		print(">>> _url  :", _url)
 
-		frappe.sendmail(
+		if subject == "Complete Registration":
+			frappe.sendmail(
 			recipients=self.email,
 			subject=subject,
 			content=content or (
@@ -544,6 +545,21 @@ class User(Document):
 			now=True,
 			retry=3,
 		)
+		else:
+			frappe.sendmail(
+            recipients=self.email,
+            sender=sender,
+            subject=subject,
+            template=template if not custom_template else None,
+            content=content if custom_template else None,
+            args=args,
+            header=[subject, "green"],
+            delayed=(not now) if now is not None else self.flags.delay_emails,
+            retry=3,
+        )
+			
+
+		
 
 	def on_trash(self):
 		frappe.clear_cache(user=self.name)
