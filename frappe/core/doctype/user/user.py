@@ -357,12 +357,13 @@ class User(Document):
 
 	def validate_share(self, docshare):
 		pass
-		# if docshare.user == self.name:
-		# 	if self.user_type=="System User":
-		# 		if docshare.share != 1:
-		# 			frappe.throw(_("Sorry! User should have complete access to their own record."))
-		# 	else:
-		# 		frappe.throw(_("Sorry! Sharing with Website User is prohibited."))
+
+	# if docshare.user == self.name:
+	# 	if self.user_type=="System User":
+	# 		if docshare.share != 1:
+	# 			frappe.throw(_("Sorry! User should have complete access to their own record."))
+	# 	else:
+	# 		frappe.throw(_("Sorry! Sharing with Website User is prohibited."))
 
 	def send_password_notification(self, new_password):
 		try:
@@ -498,7 +499,7 @@ class User(Document):
 			and get_formatted_email(frappe.session.user)
 			or None
 		)
-
+		content = None
 		if custom_template:
 			from frappe.email.doctype.email_template.email_template import (
 				get_email_template,
@@ -508,15 +509,39 @@ class User(Document):
 			subject = email_template.get("subject")
 			content = email_template.get("message")
 
+		_fn = args.get("first_name", "")
+		_ln = (" " + self.last_name) if self.last_name else ""
+		_user = args.get("user", self.name)
+		_by = args.get("created_by", "Administrator")
+		_link = args.get("link", "")
+		_url = args.get("site_url", get_url())
+
+		print(">>> self.email   :", self.email)
+		print(">>> subject :", subject)
+		print(">>> content :", content)
+		print(">>> _fn   :", _fn)
+		print(">>> _ln   :", _ln)
+		print(">>> _user :", _user)
+		print(">>> _by   :", _by)
+		print(">>> _link :", _link)
+		print(">>> _url  :", _url)
+
 		frappe.sendmail(
 			recipients=self.email,
-			sender=sender,
 			subject=subject,
-			template=template if not custom_template else None,
-			content=content if custom_template else None,
-			args=args,
-			header=[subject, "green"],
-			delayed=(not now) if now is not None else self.flags.delay_emails,
+			content=content or (
+				f"<p>Xin chào {_fn}{_ln},</p>"
+				f"<p>Cảm ơn bạn đã Đăng ký sử dụng GRPNext.</p>"
+				f"<p>Một tài khoản mới đã được tạo cho bạn tại <a href='{_url}'>{_url}</a>.</p>"
+				f"<p>ID đăng nhập của bạn là: <b>{_user}</b></p>"
+				f"<p>Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.</p>"
+				f'<p style="margin: 15px 0px;"><a href="{_link}" rel="nofollow" class="btn btn-primary">Hoàn tất đăng ký</a></p>'
+				+ (
+					f'<br><p style="margin-top:15px">Cảm ơn,<br>{_by}</p>' if _by != "Administrator" else "")
+				+ f"<br><p>Bạn cũng có thể sao chép và dán liên kết sau vào trình duyệt của mình<br><a href='{_link}'>{_link}</a></p>"
+			),
+			delayed=False,
+			now=True,
 			retry=3,
 		)
 
