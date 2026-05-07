@@ -528,38 +528,35 @@ class User(Document):
 
 		if subject == "Complete Registration":
 			frappe.sendmail(
-			recipients=self.email,
-			subject=subject,
-			content=content or (
-				f"<p>Xin chào {_fn}{_ln},</p>"
-				f"<p>Cảm ơn bạn đã Đăng ký sử dụng GRPNext.</p>"
-				f"<p>Một tài khoản mới đã được tạo cho bạn tại <a href='{_url}'>{_url}</a>.</p>"
-				f"<p>ID đăng nhập của bạn là: <b>{_user}</b></p>"
-				f"<p>Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.</p>"
-				f'<p style="margin: 15px 0px;"><a href="{_link}" rel="nofollow" class="btn btn-primary">Hoàn tất đăng ký</a></p>'
-				+ (
-					f'<br><p style="margin-top:15px">Cảm ơn,<br>{_by}</p>' if _by != "Administrator" else "")
-				+ f"<br><p>Bạn cũng có thể sao chép và dán liên kết sau vào trình duyệt của mình<br><a href='{_link}'>{_link}</a></p>"
-			),
-			delayed=False,
-			now=True,
-			retry=3,
-		)
+				recipients=self.email,
+				subject=subject,
+				content=content or (
+					f"<p>Xin chào {_fn}{_ln},</p>"
+					f"<p>Cảm ơn bạn đã Đăng ký sử dụng nextGRP.</p>"
+					f"<p>Một tài khoản mới đã được tạo cho bạn tại <a href='{_url}'>{_url}</a>.</p>"
+					f"<p>ID đăng nhập của bạn là: <b>{_user}</b></p>"
+					f"<p>Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.</p>"
+					f'<p style="margin: 15px 0px;"><a href="{_link}" rel="nofollow" class="btn btn-primary">Hoàn tất đăng ký</a></p>'
+					+ (
+						f'<br><p style="margin-top:15px">Cảm ơn,<br>{_by}</p>' if _by != "Administrator" else "")
+					+ f"<br><p>Bạn cũng có thể sao chép và dán liên kết sau vào trình duyệt của mình<br><a href='{_link}'>{_link}</a></p>"
+				),
+				delayed=False,
+				now=True,
+				retry=3,
+			)
 		else:
 			frappe.sendmail(
-            recipients=self.email,
-            sender=sender,
-            subject=subject,
-            template=template if not custom_template else None,
-            content=content if custom_template else None,
-            args=args,
-            header=[subject, "green"],
-            delayed=(not now) if now is not None else self.flags.delay_emails,
-            retry=3,
-        )
-			
-
-		
+				recipients=self.email,
+				sender=sender,
+				subject=subject,
+				template=template if not custom_template else None,
+				content=content if custom_template else None,
+				args=args,
+				header=[subject, "green"],
+				delayed=(not now) if now is not None else self.flags.delay_emails,
+				retry=3,
+			)
 
 	def on_trash(self):
 		frappe.clear_cache(user=self.name)
