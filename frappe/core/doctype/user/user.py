@@ -531,7 +531,7 @@ class User(Document):
 			subject=subject,
 			content=content or (
 				f"<p>Xin chào {_fn}{_ln},</p>"
-				f"<p>Cảm ơn bạn đã Đăng ký sử dụng GRPNext.</p>"
+				f"<p>Cảm ơn bạn đã Đăng ký sử dụng nextGRP.</p>"
 				f"<p>Một tài khoản mới đã được tạo cho bạn tại <a href='{_url}'>{_url}</a>.</p>"
 				f"<p>ID đăng nhập của bạn là: <b>{_user}</b></p>"
 				f"<p>Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.</p>"
