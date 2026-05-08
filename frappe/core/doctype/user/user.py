@@ -413,9 +413,9 @@ class User(Document):
 		self.db_set("reset_password_key", hashed_key)
 		self.db_set("last_reset_password_key_generated_on", now_datetime())
 
-		url = "/update-password?key=" + key
+		url = "/reset-password/step2?key=" + key
 		if password_expired:
-			url = "/update-password?key=" + key + "&password_expired=true"
+			url = "/reset-password/step2?key=" + key + "&password_expired=true"
 
 		link = get_url(url, allow_header_override=False)
 		if send_email:
@@ -527,6 +527,7 @@ class User(Document):
 		print(">>> _url  :", _url)
 
 		if subject == "Complete Registration":
+			_link = _link.replace("/reset-password/step2", "/registration-completed")
 			frappe.sendmail(
 				recipients=self.email,
 				subject=subject,
@@ -952,12 +953,22 @@ def update_password(
 	if feedback and not feedback.get("password_policy_validation_passed", False):
 		handle_password_test_fail(feedback)
 
+	print(">>> DEBUG update_password CALLED")
+	print(">>> key:", key)
+	print(">>> old_password:", old_password)
+
 	res = _get_user_for_update_password(key, old_password)
+	
+	print(">>> res from _get_user_for_update_password:", res)
+
 	if res.get("message"):
 		frappe.local.response.http_status_code = 410
 		return res["message"]
 	else:
-		user = res["user"]
+		user = res.get("user")
+		print(">>> user from res:", user)
+		if not user:
+			frappe.throw(_("Link không hợp lệ hoặc bạn chưa nhập mật khẩu cũ."))
 
 	logout_all_sessions = cint(logout_all_sessions) or frappe.db.get_single_value(
 		"System Settings", "logout_on_password_reset"
