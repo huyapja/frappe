@@ -184,19 +184,8 @@ def init_request(request):
 			raise frappe.SessionStopped("Session Stopped")
 	else:
 		frappe.connect(set_admin_as_user=False)
-	# [UPDATED] Bỏ giới hạn dung lượng cho drive upload API
-	# [OLD CODE]
-	# if request.path.startswith("/api/method/upload_file"):
-	# 	from frappe.core.api.file import get_max_file_size
-	# 	request.max_content_length = get_max_file_size()
-	# else:
-	# 	request.max_content_length = cint(frappe.local.conf.get("max_file_size")) or 25 * 1024 * 1024
-	if request.path.startswith("/api/method/drive.api.files"):
-		request.max_content_length = None  # Không giới hạn dung lượng cho drive API
-	elif request.path.startswith("/api/method/upload_file"):
-		from frappe.core.api.file import get_max_file_size
-
-		request.max_content_length = get_max_file_size()
+	if request.path == "/api/method/drive.api.files.upload_files_document":
+		request.max_content_length = cint(frappe.local.conf.get("nextdoc_file_size")) or 25 * 1024 * 1024
 	else:
 		request.max_content_length = cint(frappe.local.conf.get("max_file_size")) or 25 * 1024 * 1024
 	make_form_dict(request)
