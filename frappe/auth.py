@@ -223,21 +223,21 @@ class LoginManager:
             frappe.local.response["redirect_to"] = redirect_to
             frappe.cache.hdel("redirect_after_login", self.user)
         
-        roles = [
-            r for r in frappe.get_roles(self.user)
-            if r not in {
-                "All",
-                "Guest",
-                "Desk User",
-                "Accounts User",
-                "Raven User",
-            }
-        ]
+        # roles = [
+        #     r for r in frappe.get_roles(self.user)
+        #     if r not in {
+        #         "All",
+        #         "Guest",
+        #         "Desk User",
+        #         "Accounts User",
+        #         "Raven User",
+        #     }
+        # ]
 
         frappe.local.cookie_manager.set_cookie("full_name", self.full_name)
         frappe.local.cookie_manager.set_cookie("user_id", self.user)
         frappe.local.cookie_manager.set_cookie("user_image", self.info.user_image or "")
-        frappe.local.cookie_manager.set_cookie("user_role",",".join(roles))
+        # frappe.local.cookie_manager.set_cookie("user_role",",".join(roles))
 
     def clear_preferred_language(self):
         frappe.local.cookie_manager.delete_cookie("preferred_language")
