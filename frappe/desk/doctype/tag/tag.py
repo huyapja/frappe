@@ -13,6 +13,50 @@ class Tag(Document):
 
 	from typing import TYPE_CHECKING
 
+	def after_insert(self):
+		self.sync_drive_tag()
+
+	def on_update(self):
+		self.sync_drive_tag()
+
+	def on_trash(self):
+		self.delete_drive_tag()
+
+	def sync_drive_tag(self):
+		if frappe.db.exists(
+			"Drive Tag",
+			{"frappe_tag": self.name}
+		):
+			return
+
+		frappe.get_doc({
+			"doctype": "Drive Tag",
+			"title": self.name,
+			"color": "gray",
+			"frappe_tag": self.name,
+		}).insert(ignore_permissions=True)
+	
+	def delete_drive_tag(self):
+		drive_tag = frappe.db.get_value(
+			"Drive Tag",
+			{"frappe_tag": self.name},
+			"name"
+		)
+
+		if not drive_tag:
+			return
+
+		frappe.db.delete(
+			"Drive Entity Tag",
+			{"tag": drive_tag}
+		)
+
+		frappe.delete_doc(
+			"Drive Tag",
+			drive_tag,
+			ignore_permissions=True
+		)
+
 	if TYPE_CHECKING:
 		from frappe.types import DF
 
@@ -126,7 +170,7 @@ class DocTags:
 				self.update(dn, tl)
 			else:
 				raise
-
+	
 	def setup(self):
 		"""adds the _user_tags column if not exists"""
 		from frappe.database.schema import add_column
