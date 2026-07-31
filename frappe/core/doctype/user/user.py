@@ -255,6 +255,18 @@ class User(Document):
 		if self.time_zone:
 			frappe.defaults.set_default("time_zone", self.time_zone, self.name)
 
+		if self.has_value_changed("enabled") and cint(self.enabled):
+			officer = frappe.db.get_value("Officer", {"user": self.name}, "name")
+			if officer:
+				frappe.db.set_value(
+					"Officer",
+					officer,
+					{
+						"status": 1,
+						"disable_type": None,
+					},
+				)
+
 		if self.has_value_changed("enabled"):
 			frappe.cache.delete_key("users_for_mentions")
 			frappe.cache.delete_key("enabled_users")
