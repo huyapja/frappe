@@ -12,6 +12,32 @@ function frappe_handlers(realtime, socket) {
 		socket.join(SITE_ROOM);
 	}
 
+	// Backport helper used by custom realtime handlers (e.g. Raven).
+	socket.has_permission = (doctype, name) => {
+		return new Promise((resolve, reject) => {
+			const req = frappe_request("/api/method/frappe.realtime.has_permission", socket);
+
+			if (!req) {
+				reject(new Error("Unable to create authenticated Frappe request"));
+				return;
+			}
+
+			req.type("form")
+				.query({
+					doctype,
+					name: name || "",
+				})
+				.end((err, res) => {
+					if (err || !res || res.status !== 200 || !res.body?.message) {
+						reject(err || new Error(`Permission denied for ${doctype} ${name || ""}`));
+						return;
+					}
+
+					resolve(true);
+				});
+		});
+	};
+
 	socket.on("ping", () => {
 		socket.emit("pong");
 	});

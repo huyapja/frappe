@@ -130,6 +130,13 @@ def can_subscribe_doctype(doctype: str) -> bool:
 
 
 @frappe.whitelist(allow_guest=True)
+def has_permission(doctype: str, name: str) -> bool:
+	"""Permission helper for custom realtime app handlers."""
+	frappe.has_permission(doctype, doc=name, throw=True)
+	return True
+
+
+@frappe.whitelist(allow_guest=True)
 def get_user_info():
 	user_type = frappe.session.data.user_type
 	# For requests with Bearer tokens, user_type is not set in the session data
@@ -138,6 +145,7 @@ def get_user_info():
 	return {
 		"user": frappe.session.user,
 		"user_type": user_type,
+		"installed_apps": frappe.get_installed_apps(),
 	}
 
 

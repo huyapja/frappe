@@ -43,6 +43,7 @@ function authenticate_with_frappe(socket, next) {
 		.then((res) => {
 			socket.user = res.body.message.user;
 			socket.user_type = res.body.message.user_type;
+			socket.installed_apps = res.body.message.installed_apps || [];
 			socket.sid = cookies.sid;
 			socket.authorization_header = authorization_header;
 			next();
