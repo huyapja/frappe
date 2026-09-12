@@ -528,31 +528,21 @@ class User(Document):
 		_link = args.get("link", "")
 		_url = args.get("site_url", get_url())
 
-		print(">>> self.email   :", self.email)
-		print(">>> subject :", subject)
-		print(">>> content :", content)
-		print(">>> _fn   :", _fn)
-		print(">>> _ln   :", _ln)
-		print(">>> _user :", _user)
-		print(">>> _by   :", _by)
-		print(">>> _link :", _link)
-		print(">>> _url  :", _url)
-
 		if subject == "Complete Registration":
 			_link = _link.replace("/reset-password/step2", "/registration-completed")
 			frappe.sendmail(
 				recipients=self.email,
 				subject=subject,
 				content=content or (
-					f"<p>Xin chào {_fn}{_ln},</p>"
-					f"<p>Cảm ơn bạn đã Đăng ký sử dụng nextGRP.</p>"
-					f"<p>Một tài khoản mới đã được tạo cho bạn tại <a href='{_url}'>{_url}</a>.</p>"
-					f"<p>ID đăng nhập của bạn là: <b>{_user}</b></p>"
-					f"<p>Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.</p>"
-					f'<p style="margin: 15px 0px;"><a href="{_link}" rel="nofollow" class="btn btn-primary">Hoàn tất đăng ký</a></p>'
+					f"<p>{_('Xin chào')} {_fn}{_ln},</p>"
+					f"<p>{_('Cảm ơn bạn đã Đăng ký sử dụng nextGRP.')}</p>"
+					f"<p>{_('Một tài khoản mới đã được tạo cho bạn tại')} <a href='{_url}'>{_url}</a>.</p>"
+					f"<p>{_('ID đăng nhập của bạn là')}: <b>{_user}</b></p>"
+					f"<p>{_('Nhấp vào liên kết bên dưới để hoàn tất đăng ký và đặt lại mật khẩu.')}</p>"
+					f'<p style="margin: 15px 0px;"><a href="{_link}" rel="nofollow" class="btn btn-primary">{_("Hoàn tất đăng ký")}</a></p>'
 					+ (
-						f'<br><p style="margin-top:15px">Cảm ơn,<br>{_by}</p>' if _by != "Administrator" else "")
-					+ f"<br><p>Bạn cũng có thể sao chép và dán liên kết sau vào trình duyệt của mình<br><a href='{_link}'>{_link}</a></p>"
+						f'<br><p style="margin-top:15px">{_("Cảm ơn")},<br>{_by}</p>' if _by != "Administrator" else "")
+					+ f"<br><p>{_('Bạn cũng có thể sao chép và dán liên kết sau vào trình duyệt của mình')}<br><a href='{_link}'>{_link}</a></p>"
 				),
 				delayed=False,
 				now=True,
@@ -965,20 +955,13 @@ def update_password(
 	if feedback and not feedback.get("password_policy_validation_passed", False):
 		handle_password_test_fail(feedback)
 
-	print(">>> DEBUG update_password CALLED")
-	print(">>> key:", key)
-	print(">>> old_password:", old_password)
-
 	res = _get_user_for_update_password(key, old_password)
-	
-	print(">>> res from _get_user_for_update_password:", res)
 
 	if res.get("message"):
 		frappe.local.response.http_status_code = 410
 		return res["message"]
 	else:
 		user = res.get("user")
-		print(">>> user from res:", user)
 		if not user:
 			frappe.throw(_("Link không hợp lệ hoặc bạn chưa nhập mật khẩu cũ."))
 
